@@ -36,3 +36,4 @@ Ensure your Raspberry Pi has the following libraries installed:
 
 ```bash
 sudo apt-get install wiringpi libncurses5-dev
+# pi_snake
