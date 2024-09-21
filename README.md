@@ -18,7 +18,7 @@ Just some regular snake game style we do play on **Nokia 3310** hahhaaa, you sho
 - **Edge Wrapping**: The snake wraps around the screen when it hits the edge.
 
 ## 🤖 Hardware
-<img src="image/hardward.JPG">
+<img src="image/hardward.JPG" height="600px">
 
 ---
 
