@@ -1,6 +1,7 @@
-# 🐍 Raspberry Pi Snake Game with 16x2 LCD and Keyboard Control
+# 🐍 Pi Snake Game with 16x2 LCD 
 
-Welcome to the **Snake Game** built for the **Raspberry Pi**, displayed on a **16x2 LCD** and controlled with your **keyboard**. This retro-style game brings the classic snake game to your Pi while working with a minimalistic display.
+Hi guys, I'm currently working on a **Snake Game** built with the use of **Raspberry Pi4**, **16x2 LCD Screen** and some **Jumper Wires**.
+You should be able to control the game with your **keyboard** to have the real experience.
 
 ## 🎮 Game Overview
 
