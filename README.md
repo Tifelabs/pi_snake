@@ -11,7 +11,7 @@ Just some regular snake game style we do play on **Nokia 3310** hahhaaa, you sho
 
 ## 🖥️ Features
 
-- **16x2 LCD Display**: Play the game on a retro-style LCD screen.
+- **16x2 LCD Display**: To Display the game on a LCD screen.
 - **Keyboard Control**: Move the snake using the arrow keys.
 - **Snake Growth**: Snake grows as it eats food.
 - **Food Generation**: Randomly generated food on the screen.
@@ -31,8 +31,7 @@ Just some regular snake game style we do play on **Nokia 3310** hahhaaa, you sho
 ---
 
 ## 🛠️ Installation and Setup
-
-Follow these steps to get the game running on your Raspberry Pi.
+in progress
 
 ### 1. Prerequisites
 
@@ -40,4 +39,10 @@ Ensure your Raspberry Pi has the following libraries installed:
 
 ```bash
 sudo apt-get install wiringpi libncurses5-dev
+```
 # pi_snake
+
+## Work in progresssss...
+
+## By the I'm using remote connection(REALVNC) to connect to the pi
+Still fixing some bugs
