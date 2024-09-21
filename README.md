@@ -3,9 +3,9 @@
 Hi guys, I'm currently working on a **Snake Game** built with the use of **Raspberry Pi4**, **16x2 LCD Screen** and some **Jumper Wires**.
 You should be able to control the game with your **keyboard** to have the real experience.
 
-## 🎮 Game Overview
+## 🎮 Game Details
 
-In this project, we control the movement of a snake using the arrow keys on a keyboard. The snake grows when it eats the food, and the game wraps around the edges of the 16x2 LCD screen. The goal is to grow the longest snake possible.
+Just some regular snake game style we do play on **Nokia 3310** hahhaaa, you should be able control the movement of a snake using the arrow keys on a keyboard. The snake grows when it eats the food, and the game wraps around the edges of the 16x2 LCD screen. The goal is to grow the longest snake possible.
 
 ---
 
@@ -16,6 +16,9 @@ In this project, we control the movement of a snake using the arrow keys on a ke
 - **Snake Growth**: Snake grows as it eats food.
 - **Food Generation**: Randomly generated food on the screen.
 - **Edge Wrapping**: The snake wraps around the screen when it hits the edge.
+
+## 🤖 Hardware
+![Took kit](./images/hardward.PNG) | 🎮 Use arrow keys to control! |
 
 ---
 
