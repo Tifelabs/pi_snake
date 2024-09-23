@@ -55,6 +55,7 @@ void moveSnake() {
         case RIGHT: snake[0].x = (snake[0].x + 1) % COLS; break;
     }
 }
+//
 
 // Check if snake eats the food
 void checkFood() {
