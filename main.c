@@ -1,38 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
-#include <lcd.h>
+#include <wiringPiI2C.h>
 #include <ncurses.h>
 #include <unistd.h>  // For usleep
+#include <time.h>
 
-#define LCD_RS  3  // Register select pin
-#define LCD_E   0  // Enable Pin
-#define LCD_D4  6  // Data pin 4
-#define LCD_D5  1  // Data pin 5
-#define LCD_D6  5  // Data pin 6
-#define LCD_D7  4  // Data pin 7
+#define LCD_ADDR 0x27   // I2C address for your LCD, change this if necessary
+#define LCD_CHR  1      // Mode - Sending data
+#define LCD_CMD  0      // Mode - Sending command
+#define LCD_BACKLIGHT 0x08  // On
+#define ENABLE  0b00000100  // Enable bit
 
-// Game constants
-#define ROWS 2  // The number of rows in LCD (16x2)
-#define COLS 16 // The number of columns in LCD (16x2)
+// LCD Parameters
+#define LCD_WIDTH 16    // Maximum characters per line
+#define LCD_LINE_1 0x80 // LCD RAM address for the 1st line
+#define LCD_LINE_2 0xC0 // LCD RAM address for the 2nd line
 
-// Snake directions
+int fd;  // I2C file descriptor
+
+// Prototypes
+void lcdSendByte(int bits, int mode);
+void lcdInit();
+void lcdClear();
+void lcdPosition(int row, int col);
+void lcdPuts(const char *str);
+void lcdToggleEnable(int bits);
+
 enum direction {UP, DOWN, LEFT, RIGHT};
 
 typedef struct {
     int x, y;
 } Point;
 
-// Global variables for snake game
-Point snake[32];  // Snake can grow up to 32 segments.
+Point snake[32];
 int snakeLength = 1;
 Point food;
 enum direction dir = RIGHT;
 
-// Initialize LCD
-int lcdHandle;
-
-// Initialize ncurses for keyboard input
 void initNcurses() {
     initscr();
     timeout(100);  // Non-blocking input every 100 ms
@@ -41,61 +46,64 @@ void initNcurses() {
     curs_set(0);
 }
 
-// Move the snake based on the current direction
 void moveSnake() {
-    // Shift snake body positions
     for (int i = snakeLength - 1; i > 0; --i) {
         snake[i] = snake[i - 1];
     }
-    // Update head based on direction
     switch (dir) {
-        case UP:    snake[0].y = (snake[0].y - 1 + ROWS) % ROWS; break;
-        case DOWN:  snake[0].y = (snake[0].y + 1) % ROWS; break;
-        case LEFT:  snake[0].x = (snake[0].x - 1 + COLS) % COLS; break;
-        case RIGHT: snake[0].x = (snake[0].x + 1) % COLS; break;
+        case UP:    snake[0].y = (snake[0].y - 1 + 2) % 2; break;
+        case DOWN:  snake[0].y = (snake[0].y + 1) % 2; break;
+        case LEFT:  snake[0].x = (snake[0].x - 1 + 16) % 16; break;
+        case RIGHT: snake[0].x = (snake[0].x + 1) % 16; break;
     }
 }
-//
 
-// Check if snake eats the food
+void generateFood() {
+    int overlap;
+    do {
+        overlap = 0;
+        food.x = rand() % 16;
+        food.y = rand() % 2;
+
+        for (int i = 0; i < snakeLength; i++) {
+            if (snake[i].x == food.x && snake[i].y == food.y) {
+                overlap = 1;
+                break;
+            }
+        }
+    } while (overlap);
+}
+
 void checkFood() {
     if (snake[0].x == food.x && snake[0].y == food.y) {
         snakeLength++;
-        // Generate new food
-        food.x = rand() % COLS;
-        food.y = rand() % ROWS;
+        generateFood();
     }
 }
 
-// Render the game on the 16x2 LCD
 void render() {
-    lcdClear(lcdHandle);
+    lcdClear();
+    char display[17];
 
-    char display[COLS + 1];  // String to display on the LCD
+    for (int row = 0; row < 2; row++) {
+        for (int i = 0; i < 16; i++) display[i] = ' ';
+        display[16] = '\0';
 
-    for (int row = 0; row < ROWS; row++) {
-        // Clear the display array
-        for (int i = 0; i < COLS; i++) display[i] = ' ';
-        display[COLS] = '\0';
-
-        // Draw snake on LCD
         for (int i = 0; i < snakeLength; i++) {
             if (snake[i].y == row) {
-                display[snake[i].x] = (i == 0) ? 'O' : 'o';  // 'O' for head, 'o' for body
+                display[snake[i].x] = (i == 0) ? 'O' : 'o';
             }
         }
 
-        // Draw food on LCD
         if (food.y == row) {
             display[food.x] = '*';
         }
 
-        lcdPosition(lcdHandle, 0, row);  // Move to the row
-        lcdPuts(lcdHandle, display);     // Print the row
+        lcdPosition(row, 0);
+        lcdPuts(display);
     }
 }
 
-// Handle keyboard input for controlling the snake
 void handleInput() {
     int ch = getch();
     switch (ch) {
@@ -103,30 +111,28 @@ void handleInput() {
         case KEY_DOWN:  if (dir != UP) dir = DOWN; break;
         case KEY_LEFT:  if (dir != RIGHT) dir = LEFT; break;
         case KEY_RIGHT: if (dir != LEFT) dir = RIGHT; break;
-        case 'q':       endwin(); exit(0);  // Quit the game
+        case 'q':       endwin(); exit(0);
     }
 }
 
 int main() {
+    srand(time(NULL));  // Seed the random number generator
     wiringPiSetup();
 
-    // Setup LCD
-    lcdHandle = lcdInit(ROWS, COLS, 4, LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7, 0, 0, 0, 0);
-    if (lcdHandle == -1) {
-        printf("LCD initialization failed!\n");
+    fd = wiringPiI2CSetup(LCD_ADDR);  // I2C setup for the LCD
+    if (fd == -1) {
+        printf("Failed to init I2C communication.\n");
         return -1;
     }
 
-    // Setup initial snake position and food
-    snake[0].x = COLS / 2;
-    snake[0].y = ROWS / 2;
-    food.x = rand() % COLS;
-    food.y = rand() % ROWS;
+    lcdInit();
 
-    // Initialize ncurses for keyboard control
+    snake[0].x = 8;
+    snake[0].y = 1;
+    generateFood();  // Initial food generation
+
     initNcurses();
 
-    // Main game loop
     while (1) {
         handleInput();
         moveSnake();
@@ -135,6 +141,52 @@ int main() {
         usleep(200000);  // Slow down the game loop (200ms)
     }
 
-    endwin();  // Clean up ncurses
+    endwin();
     return 0;
+}
+
+// LCD Functions
+void lcdSendByte(int bits, int mode) {
+    int bits_high = mode | (bits & 0xF0) | LCD_BACKLIGHT;
+    int bits_low  = mode | ((bits << 4) & 0xF0) | LCD_BACKLIGHT;
+
+    wiringPiI2CWrite(fd, bits_high);
+    lcdToggleEnable(bits_high);
+
+    wiringPiI2CWrite(fd, bits_low);
+    lcdToggleEnable(bits_low);
+}
+
+void lcdToggleEnable(int bits) {
+    usleep(500);
+    wiringPiI2CWrite(fd, (bits | ENABLE));
+    usleep(500);
+    wiringPiI2CWrite(fd, (bits & ~ENABLE));
+    usleep(500);
+}
+
+void lcdInit() {
+    lcdSendByte(0x33, LCD_CMD);  // Initialize
+    lcdSendByte(0x32, LCD_CMD);  // Initialize
+    lcdSendByte(0x06, LCD_CMD);  // Cursor move direction
+    lcdSendByte(0x0C, LCD_CMD);  // Turn cursor off
+    lcdSendByte(0x28, LCD_CMD);  // 2 line display
+    lcdSendByte(0x01, LCD_CMD);  // Clear display
+    usleep(500);
+}
+
+void lcdClear() {
+    lcdSendByte(0x01, LCD_CMD);
+    usleep(500);
+}
+
+void lcdPosition(int row, int col) {
+    int addr = (row == 0) ? LCD_LINE_1 : LCD_LINE_2;
+    lcdSendByte(addr + col, LCD_CMD);
+}
+
+void lcdPuts(const char *str) {
+    while (*str) {
+        lcdSendByte(*str++, LCD_CHR);
+    }
 }

@@ -1,0 +1,113 @@
+#include <lcd.h>
+#include <ncurses.h>
+#include <unistd.h>  // For usleep
+
+#define LCD_RS  3  // Register select pin
+#defineLCD_E   0  // Enable P
+
+// Initialize ncurses for keyboard input
+void initNcurses() {
+    initscr();
+    timeout(100);  // Non-blocking input every 100 ms
+    keypad(stdscr, TRUE);
+    noecho();
+    curs_set(0);
+}
+
+// Move the snake based on the current direction
+void moveSnake() {
+    // Shift snake body positions
+    for (int i = snakeLength - 1; i > 0; --i) {
+        snake[i] = snake[i - 1];
+    }
+    // Update head based on direction
+    switch (dir) {
+        case UP:    snake[0].y = (snake[0].y - 1 + ROWS) % ROWS; break;
+        case DOWN:  snake[0].y = (snake[0].y + 1) % ROWS; break;
+        case LEFT:  snake[0].x = (snake[0].x - 1 + COLS) % COLS; break;
+        case RIGHT: snake[0].x = (snake[0].x + 1) % COLS; break;
+    }
+}
+//
+
+// Check if snake eats the food
+void checkFood() {
+    if (snake[0].x == food.x && snake[0].y == food.y) {
+        snakeLength++;
+        // Generate new food
+        food.x = rand() % COLS;
+        food.y = rand() % ROWS;
+    }
+}
+
+// Render the game on the 16x2 LCD
+void render() {
+    lcdClear(lcdHandle);
+
+    char display[COLS + 1];  // String to display on the LCD
+
+    for (int row = 0; row < ROWS; row++) {
+        // Clear the display array
+        for (int i = 0; i < COLS; i++) display[i] = ' ';
+        display[COLS] = '\0';
+
+        // Draw snake on LCD
+        for (int i = 0; i < snakeLength; i++) {
+            if (snake[i].y == row) {
+                display[snake[i].x] = (i == 0) ? 'O' : 'o';  // 'O' for head, 'o' for body
+            }
+        }
+
+        // Draw food on LCD
+        if (food.y == row) {
+            display[food.x] = '*';
+        }
+
+        lcdPosition(lcdHandle, 0, row);  // Move to the row
+        lcdPuts(lcdHandle, display);     // Print the row
+    }
+}
+
+// Handle keyboard input for controlling the snake
+void handleInput() {
+    int ch = getch();
+    switch (ch) {
+        case KEY_UP:    if (dir != DOWN) dir = UP; break;
+        case KEY_DOWN:  if (dir != UP) dir = DOWN; break;
+        case KEY_LEFT:  if (dir != RIGHT) dir = LEFT; break;
+        case KEY_RIGHT: if (dir != LEFT) dir = RIGHT; break;
+        case 'q':       endwin(); exit(0);  // Quit the game
+    }
+}
+
+int main() {
+    wiringPiSetup();
+
+    // Setup LCD
+    lcdHandle = lcdInit(ROWS, COLS, 4, LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7, 0, 0, 0, 0);
+    if (lcdHandle == -1) {
+        printf("LCD initialization failed!\n");
+        return -1;
+    }
+
+    // Setup initial snake position and food
+    snake[0].x = COLS / 2;
+    snake[0].y = ROWS / 2;
+    food.x = rand() % COLS;
+    food.y = rand() % ROWS;
+
+    // Initialize ncurses for keyboard control
+    initNcurses();
+
+    // Main game loop
+    while (1) {
+        handleInput();
+        moveSnake();
+        checkFood();
+        render();
+        usleep(200000);  // Slow down the game loop (200ms)
+    }
+
+    endwin();  // Clean up ncurses
+    return 0;
+}
