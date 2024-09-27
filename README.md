@@ -27,7 +27,17 @@ This is a retro snake game of the one found on the classic **Nokia 3310**! You c
 
 Here's a sample setup of the hardware:
 
-![Hardware Setup](image/hardward.JPG)
+<img src='hardware.JPG' height=200px >
+
+
+## LCD Testing
+To test for the lcd, try running **test_lcd.c** in the **src** directory.
+
+if successful you should get :
+<br>
+<img src='image/lcd_test.PNG' height=200px >
+
+
 
 
 ---
