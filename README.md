@@ -27,7 +27,7 @@ This is a retro snake game of the one found on the classic **Nokia 3310**! You c
 
 Here's a sample setup of the hardware:
 
-<img src='hardware.JPG' height=200px >
+<img src='image/hardware.JPG' height=200px >
 
 
 ## LCD Testing
